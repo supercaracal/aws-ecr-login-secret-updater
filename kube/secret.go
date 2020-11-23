@@ -117,7 +117,7 @@ func getSecretData(server, user, password, email string) ([]byte, error) {
 	}
 
 	body := DockerConfigJSON{
-		Auths: map[string]DockerConfigEntry{server: entry},
+		Auths: DockerConfig{server: entry},
 	}
 
 	return json.Marshal(body)
