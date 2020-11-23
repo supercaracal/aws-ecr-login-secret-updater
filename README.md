@@ -8,11 +8,6 @@ AWS ECR login secret updater
 
 > Note that the login is only good for 12 hours.
 
-```
-$ kind create cluster
-$ kubectl cluster-info --context kind-kind
-```
-
 ```yaml
 apiVersion: batch/v1beta1
 kind: CronJob
@@ -35,10 +30,16 @@ spec:
             image: ghcr.io/supercaracal/aws-ecr-login-secret-updater:latest
             envFrom:
               - secretRef:
-                  name: sample-ecr-login-secret-updater-secret
+                  name: sample-iam-secret
             env:
               - name: TZ
                 value: "Asia/Tokyo"
+              - name: AWS_REGION
+                value: "ap-northeast-1"
+              - name: AWS_ACCOUNT_ID
+                value: "000000000000"
+              - name: EMAIL
+                value: "foo@example.com"
               - name: SECRET
                 value: "sample-ecr-login-secret"
               - name: NAMESPACE
@@ -49,13 +50,15 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: sample-ecr-login-secret-updater-secret
+  name: sample-iam-secret
   namespace: default
 type: Opaque
 data:
-  AWS_REGION: **********base64 encoded text**********
-  AWS_ACCOUNT_ID: **********base64 encoded text**********
   AWS_ACCESS_KEY_ID: **********base64 encoded text**********
   AWS_SECRET_ACCESS_KEY: **********base64 encoded text**********
-  EMAIL: **********base64 encoded text**********
+```
+
+```
+$ kind create cluster
+$ kubectl cluster-info --context kind-kind
 ```
