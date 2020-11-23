@@ -1,7 +1,9 @@
 package registry
 
 import (
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -60,10 +62,20 @@ func (c *ECRClient) Login(accountID, email string) (*Credential, error) {
 		return nil, fmt.Errorf("failed to get auth token from AWS ECR")
 	}
 
+	token, err := base64.StdEncoding.DecodeString(*result.AuthorizationData[0].AuthorizationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(string(token), ":")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("failed to parse auth token of AWS ECR")
+	}
+
 	return &Credential{
 		Server:   fmt.Sprintf("https://%s.dkr.ecr.%s.amazonaws.com", accountID, c.region),
 		UserName: awsUserNameForRegistry,
-		Password: *result.AuthorizationData[0].AuthorizationToken,
+		Password: parts[1],
 		Email:    email,
 	}, nil
 }
