@@ -1,0 +1,3 @@
+aws-ecr-login-secret-updater
+config/*
+.env
