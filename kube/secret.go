@@ -75,7 +75,9 @@ func (c *Client) UpdateSecret(name, server, user, password, email string) error 
 }
 
 func (c *Client) deleteSecret(name string) error {
-	err := c.set.CoreV1().Secrets(c.namespace).Delete(context.TODO(), name, meta.DeleteOptions{})
+	err := c.set.CoreV1().Secrets(c.namespace).Delete(
+		context.TODO(), name, meta.DeleteOptions{})
+
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
@@ -89,7 +91,7 @@ func (c *Client) createSecret(name, server, user, password, email string) error 
 	secret.Type = core.SecretTypeDockerConfigJson
 	secret.Data = map[string][]byte{}
 
-	data, err := getSecretData(server, user, password, email)
+	data, err := encodeSecretData(server, user, password, email)
 	if err != nil {
 		return err
 	}
@@ -98,6 +100,7 @@ func (c *Client) createSecret(name, server, user, password, email string) error 
 
 	_, err = c.set.CoreV1().Secrets(c.namespace).Create(
 		context.TODO(), secret, meta.CreateOptions{})
+
 	if err != nil {
 		return err
 	}
@@ -105,7 +108,7 @@ func (c *Client) createSecret(name, server, user, password, email string) error 
 	return nil
 }
 
-func getSecretData(server, user, password, email string) ([]byte, error) {
+func encodeSecretData(server, user, password, email string) ([]byte, error) {
 	field := fmt.Sprintf("%s:%s", user, password)
 	auth := base64.StdEncoding.EncodeToString([]byte(field))
 
