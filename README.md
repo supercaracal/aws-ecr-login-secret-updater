@@ -59,6 +59,20 @@ data:
 ```
 
 ```
+$ kubectl get secrets sample-ecr-login-secret -o json | jq -r .data.'".dockerconfigjson"' | base64 -d | jq .
+{
+  "auths": {
+    "https://000000000000.dkr.ecr.ap-northeast-1.amazonaws.com": {
+      "username": "AWS",
+      "password": "*****************************************",
+      "email": "foo@example.com",
+      "auth": "*****************************************"
+    }
+  }
+}
+```
+
+```
 $ kind create cluster
 $ kubectl cluster-info --context kind-kind
 ```
