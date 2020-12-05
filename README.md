@@ -25,6 +25,7 @@ spec:
         spec:
           terminationGracePeriodSeconds: 0
           restartPolicy: Never
+          serviceAccountName: ecr-login-updater
           containers:
           - name: aws-ecr-login-secret-updater
             image: ghcr.io/supercaracal/aws-ecr-login-secret-updater:latest
@@ -44,6 +45,28 @@ spec:
                 value: "sample-ecr-login-secret"
               - name: NAMESPACE
                 value: "default"
+```
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-login-updater
+  namespace: default
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: secret-updater
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secrets-manager
+subjects:
+- kind: ServiceAccount
+  name: ecr-login-updater
+  namespace: default
 ```
 
 ```yaml
@@ -70,9 +93,4 @@ $ kubectl get secrets sample-ecr-login-secret -o json | jq -r .data.'".dockercon
     }
   }
 }
-```
-
-```
-$ kind create cluster
-$ kubectl cluster-info --context kind-kind
 ```
