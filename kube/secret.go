@@ -10,6 +10,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -48,7 +49,7 @@ func NewClient(masterURL, kubeconfig, namespace string) (*Client, error) {
 		return nil, fmt.Errorf("empty namespace was given")
 	}
 
-	cfg, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
+	cfg, err := buildConfig(masterURL, kubeconfig)
 	if err != nil {
 		return nil, fmt.Errorf("Error building kubeconfig: %w", err)
 	}
@@ -59,6 +60,14 @@ func NewClient(masterURL, kubeconfig, namespace string) (*Client, error) {
 	}
 
 	return &Client{set: cli, namespace: namespace}, nil
+}
+
+func buildConfig(masterURL, kubeconfig string) (*rest.Config, error) {
+	if kubeconfig == "" {
+		return rest.InClusterConfig()
+	}
+
+	return clientcmd.BuildConfigFromFlags(masterURL, kubeconfig)
 }
 
 // UpdateSecret is a updater for Kubernetes secret of docker-registry type
