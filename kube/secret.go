@@ -39,7 +39,7 @@ type DockerConfigEntry struct {
 
 // Client is a client for Kubernetes APIs
 type Client struct {
-	set       *kubernetes.Clientset
+	set       kubernetes.Interface
 	namespace string
 }
 
