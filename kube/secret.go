@@ -84,14 +84,11 @@ func (c *Client) UpdateSecret(name, server, user, password, email string) error 
 }
 
 func (c *Client) deleteSecret(name string) error {
-	err := c.set.CoreV1().Secrets(c.namespace).Delete(
-		context.TODO(), name, meta.DeleteOptions{})
-
-	if apierrors.IsNotFound(err) {
-		return nil
+	if err := c.set.CoreV1().Secrets(c.namespace).Delete(context.TODO(), name, meta.DeleteOptions{}); err != nil && apierrors.IsNotFound(err) == false {
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (c *Client) createSecret(name, server, user, password, email string) error {
@@ -107,10 +104,7 @@ func (c *Client) createSecret(name, server, user, password, email string) error 
 
 	secret.Data[core.DockerConfigJsonKey] = data
 
-	_, err = c.set.CoreV1().Secrets(c.namespace).Create(
-		context.TODO(), secret, meta.CreateOptions{})
-
-	if err != nil {
+	if _, err = c.set.CoreV1().Secrets(c.namespace).Create(context.TODO(), secret, meta.CreateOptions{}); err != nil {
 		return err
 	}
 

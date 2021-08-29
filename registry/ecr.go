@@ -1,15 +1,18 @@
 package registry
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strings"
+	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
 )
+
+// @see https://pkg.go.dev/github.com/aws/aws-sdk-go-v2
 
 // Credential is a parameter for Kubernetes secret of docker-registry type
 type Credential struct {
@@ -21,48 +24,62 @@ type Credential struct {
 
 // ECRClient is a client for AWS ECR service
 type ECRClient struct {
-	svc    *ecr.ECR
+	svc    *ecr.Client
 	region string
 }
 
-const awsUserNameForRegistry = "AWS"
+const (
+	awsUserNameForRegistry = "AWS"
+	timeout                = 10 * time.Second
+)
 
 // NewECRClient is a constructor
 func NewECRClient(region, endpointURL string) (*ECRClient, error) {
-	sess, err := session.NewSession()
+	cfg, err := loadAWSConfig(region, endpointURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS client's session: %w", err)
+		return nil, err
 	}
 
-	config := aws.NewConfig().WithRegion(region)
-	if endpointURL != "" {
-		config = config.WithEndpoint(endpointURL)
+	return &ECRClient{svc: ecr.NewFromConfig(cfg), region: region}, nil
+}
+
+func loadAWSConfig(region, endpointURL string) (aws.Config, error) {
+	if endpointURL == "" {
+		return config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	}
 
-	return &ECRClient{svc: ecr.New(sess, config), region: region}, nil
+	return config.LoadDefaultConfig(
+		context.TODO(),
+		config.WithRegion(region),
+		config.WithEndpointResolver(
+			aws.EndpointResolverFunc(
+				func(service, region string) (aws.Endpoint, error) {
+					return aws.Endpoint{
+						PartitionID:   "aws",
+						URL:           endpointURL,
+						SigningRegion: region,
+					}, nil
+				},
+			),
+		),
+	)
 }
 
 // Login is authorization for AWS ECR
 func (c *ECRClient) Login(accountID, email string) (*Credential, error) {
-	input := &ecr.GetAuthorizationTokenInput{RegistryIds: []*string{aws.String(accountID)}}
+	input := &ecr.GetAuthorizationTokenInput{RegistryIds: []string{accountID}}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-	result, err := c.svc.GetAuthorizationToken(input)
+	output, err := c.svc.GetAuthorizationToken(ctx, input)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case ecr.ErrCodeServerException:
-				return nil, fmt.Errorf("%s %w", ecr.ErrCodeServerException, aerr)
-			case ecr.ErrCodeInvalidParameterException:
-				return nil, fmt.Errorf("%s %w", ecr.ErrCodeInvalidParameterException, aerr)
-			}
-		}
 		return nil, err
 	}
-	if len(result.AuthorizationData) == 0 {
+	if len(output.AuthorizationData) == 0 {
 		return nil, fmt.Errorf("failed to get auth token from AWS ECR")
 	}
 
-	token, err := base64.StdEncoding.DecodeString(*result.AuthorizationData[0].AuthorizationToken)
+	token, err := base64.StdEncoding.DecodeString(*output.AuthorizationData[0].AuthorizationToken)
 	if err != nil {
 		return nil, err
 	}

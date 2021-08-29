@@ -30,33 +30,26 @@ func main() {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 
 	if cfg.awsRegion == "" || cfg.awsAccountID == "" || cfg.email == "" || cfg.secret == "" {
-		logger.Fatalln("lack of required env vars")
+		logger.Fatal("lack of required env vars")
 	}
 
 	ecrCli, err := registry.NewECRClient(cfg.awsRegion, cfg.awsEndpointURL)
 	if err != nil {
-		logger.Fatalln(err)
+		logger.Fatal(err)
 	}
 
 	credential, err := ecrCli.Login(cfg.awsAccountID, cfg.email)
 	if err != nil {
-		logger.Fatalln(err)
+		logger.Fatal(err)
 	}
 
 	kubeCli, err := kube.NewClient(cfg.masterURL, cfg.kubeconfig, cfg.namespace)
 	if err != nil {
-		logger.Fatalln(err)
+		logger.Fatal(err)
 	}
 
-	err = kubeCli.UpdateSecret(
-		cfg.secret,
-		credential.Server,
-		credential.UserName,
-		credential.Password,
-		credential.Email,
-	)
-	if err != nil {
-		logger.Fatalln(err)
+	if err = kubeCli.UpdateSecret(cfg.secret, credential.Server, credential.UserName, credential.Password, credential.Email); err != nil {
+		logger.Fatal(err)
 	}
 
 	os.Exit(0)
