@@ -1,7 +1,9 @@
-SHELL          := /bin/bash
+SHELL          := /bin/bash -euo pipefail
 APP_NAME       := aws-ecr-login-secret-updater
 TZ             ?= Asia/Tokyo
-CGO_ENABLED    ?= 1
+GOOS           ?= $(shell go env GOOS)
+GOARCH         ?= $(shell go env GOARCH)
+CGO_ENABLED    ?= $(shell go env CGO_ENABLED)
 AWS_REGION     ?= ap-northeast-1
 AWS_ACCOUNT_ID ?= 000000000000
 EMAIL          ?= foo@example.com
@@ -11,10 +13,11 @@ NAMESPACE      ?= default
 all: build test lint
 
 build:
-	@CGO_ENABLED=${CGO_ENABLED} go build -ldflags="-s -w" -trimpath -tags timetzdata -o ${APP_NAME}
+	@GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -ldflags="-s -w" -trimpath -tags timetzdata -o ${APP_NAME}
 
 test:
-	@go test ./...
+	@go clean -testcache
+	@go test -race ./...
 
 lint:
 	@go vet ./...
