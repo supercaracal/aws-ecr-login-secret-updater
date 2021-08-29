@@ -84,7 +84,7 @@ func (c *Client) UpdateSecret(name, server, user, password, email string) error 
 }
 
 func (c *Client) deleteSecret(name string) error {
-	if err := c.set.CoreV1().Secrets(c.namespace).Delete(context.TODO(), name, meta.DeleteOptions{}); apierrors.IsNotFound(err) == false {
+	if err := c.set.CoreV1().Secrets(c.namespace).Delete(context.TODO(), name, meta.DeleteOptions{}); err != nil && apierrors.IsNotFound(err) == false {
 		return err
 	}
 
