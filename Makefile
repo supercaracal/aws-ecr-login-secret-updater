@@ -7,7 +7,7 @@ build: GOOS ?= $(shell go env GOOS)
 build: GOARCH ?= $(shell go env GOARCH)
 build: CGO_ENABLED ?= $(shell go env CGO_ENABLED)
 build:
-	@GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -ldflags="-s -w" -trimpath -tags timetzdata -o ${APP_NAME}
+	GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=${CGO_ENABLED} go build -ldflags="-s -w" -trimpath -tags timetzdata -o ${APP_NAME}
 
 test:
 	@go clean -testcache
