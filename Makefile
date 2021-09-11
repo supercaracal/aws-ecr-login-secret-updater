@@ -1,5 +1,6 @@
-SHELL    := /bin/bash -euo pipefail
-APP_NAME := aws-ecr-login-secret-updater
+SHELL        := /bin/bash -euo pipefail
+APP_NAME     := aws-ecr-login-secret-updater
+KUBE_LIB_VER := 1.22.1
 
 all: build test lint
 
@@ -49,3 +50,6 @@ lint-image:
 
 clean-image:
 	@docker rmi -f ${APP_NAME}
+
+mod-replace-kube:
+	@./go_mod_replace.sh ${KUBE_LIB_VER}
